@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  @apply bg-brand text-textPrimary font-sans m-0;
+}
+
+a {
+  @apply text-accent no-underline;
+}
+
+input,
+textarea,
+select {
+  @apply bg-brand bg-opacity-80 text-textPrimary;
+}
+
