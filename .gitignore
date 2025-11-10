@@ -28,8 +28,8 @@ server/.env.local
 server/.env.*.local
 server/.nyc_output/
 server/coverage/
-server/src/**/*.js
-server/src/**/*.d.ts
+server/dist/**/*.js
+server/dist/**/*.d.ts
 server/*.log
 
 # Build outputs (root)
