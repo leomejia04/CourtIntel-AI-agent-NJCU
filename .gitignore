@@ -38,6 +38,7 @@ dist/
 .vercel/
 .next/
 coverage/
+.vercel/
 
 # Logs
 npm-debug.log*
