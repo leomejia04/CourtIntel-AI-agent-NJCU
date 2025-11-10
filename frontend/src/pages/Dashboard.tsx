@@ -4,6 +4,13 @@ import { Card } from "../components/Card";
 import { Input } from "../components/Input";
 import { Tabs } from "../components/Tabs";
 
+const humanizeLabel = (value: string): string =>
+  value
+    .split(/[\s_]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+
 type Ruling = {
   verdict: string;
   rationale: string;
@@ -37,6 +44,12 @@ type LogEntry = {
   action: string;
   meta_json: Record<string, unknown> | null;
   created_at: string;
+};
+
+type FormattedLogEntry = {
+  primary: string;
+  secondary?: string;
+  fallbackMeta?: Record<string, unknown> | null;
 };
 
 interface DashboardProps {
@@ -105,6 +118,57 @@ export const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
       setSelectedCase(null);
     }
   }, [selectedCaseId, fetchCaseDetail]);
+
+  const caseTitleById = useMemo(() => {
+    const map = new Map<number, string>();
+    cases.forEach((caseItem) => {
+      map.set(caseItem.id, caseItem.title);
+    });
+    return map;
+  }, [cases]);
+
+  const formatLogEntry = useCallback(
+    (log: LogEntry): FormattedLogEntry => {
+      const meta = (log.meta_json ?? {}) as Record<string, unknown>;
+      const caseId = typeof meta["caseId"] === "number" ? (meta["caseId"] as number) : undefined;
+      const caseTitleFromMeta = typeof meta["title"] === "string" ? (meta["title"] as string) : undefined;
+      const verdict = typeof meta["verdict"] === "string" ? (meta["verdict"] as string) : undefined;
+      const biasScore = typeof meta["biasScore"] === "number" ? (meta["biasScore"] as number) : undefined;
+      const caseLabel =
+        caseTitleFromMeta ??
+        (caseId != null ? caseTitleById.get(caseId) ?? `Case #${caseId}` : undefined);
+
+      switch (log.action) {
+        case "case_create":
+          return {
+            primary: caseLabel ? `Submitted new case "${caseLabel}"` : "Submitted a new case",
+          };
+        case "ruling_generated":
+          return {
+            primary: caseLabel ? `Generated ruling for ${caseLabel}` : "Generated a ruling",
+            secondary: verdict ? `Outcome: ${humanizeLabel(verdict)}` : undefined,
+          };
+        case "bias_checked":
+          return {
+            primary: caseLabel ? `Ran bias review for ${caseLabel}` : "Ran bias review",
+            secondary:
+              typeof biasScore === "number"
+                ? `Bias score: ${(biasScore * 100).toFixed(0)}%`
+                : undefined,
+          };
+        case "login":
+          return { primary: "Signed in" };
+        default: {
+          const hasMeta = log.meta_json && Object.keys(log.meta_json).length > 0;
+          return {
+            primary: humanizeLabel(log.action),
+            fallbackMeta: hasMeta ? log.meta_json : undefined,
+          };
+        }
+      }
+    },
+    [caseTitleById],
+  );
 
   const handleCreateCase = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -177,8 +241,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
 
   const verdictToneClass = useMemo(() => {
     if (!selectedCase?.ruling) return "text-white";
-    if (selectedCase.ruling.verdict === "dismissed") return "text-emerald-300";
-    if (selectedCase.ruling.verdict === "reduced") return "text-blue-300";
+    const verdictValue = selectedCase.ruling.verdict.toLowerCase();
+    if (["innocent", "dismissed", "not guilty"].includes(verdictValue)) {
+      return "text-emerald-300";
+    }
+    if (["guilty"].includes(verdictValue)) {
+      return "text-rose-300";
+    }
+    if (["reduced", "settlement", "settled"].includes(verdictValue)) {
+      return "text-blue-300";
+    }
     return "text-amber-300";
   }, [selectedCase?.ruling]);
 
@@ -317,7 +389,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
                     <div className="flex items-center justify-between">
                       <span className="uppercase text-xs tracking-wide text-white/50">Verdict</span>
                       <span className={`text-base font-semibold ${verdictToneClass}`}>
-                        {selectedCase.ruling.verdict}
+                        {humanizeLabel(selectedCase.ruling.verdict)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
@@ -394,24 +466,33 @@ export const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
             <p className="text-sm text-white/60">No activity yet.</p>
           ) : (
             <ul className="space-y-3">
-              {logs.map((log) => (
-                <li key={log.id} className="rounded-lg border border-white/10 px-4 py-3">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="uppercase tracking-wide text-white/60">{log.action}</span>
-                    <span className="text-white/50">
-                      {new Date(log.created_at).toLocaleTimeString(undefined, {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </span>
-                  </div>
-                  {log.meta_json && (
-                    <pre className="mt-2 whitespace-pre-wrap text-xs text-white/60">
-                      {JSON.stringify(log.meta_json, null, 2)}
-                    </pre>
-                  )}
-                </li>
-              ))}
+              {logs.map((log) => {
+                const formatted = formatLogEntry(log);
+                return (
+                  <li key={log.id} className="rounded-lg border border-white/10 px-4 py-3">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="uppercase tracking-wide text-white/60">
+                        {humanizeLabel(log.action)}
+                      </span>
+                      <span className="text-white/50">
+                        {new Date(log.created_at).toLocaleTimeString(undefined, {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-sm text-white/80">{formatted.primary}</p>
+                    {formatted.secondary && (
+                      <p className="text-xs text-white/60">{formatted.secondary}</p>
+                    )}
+                    {formatted.fallbackMeta && (
+                      <pre className="mt-2 whitespace-pre-wrap text-xs text-white/50">
+                        {JSON.stringify(formatted.fallbackMeta, null, 2)}
+                      </pre>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </Card>

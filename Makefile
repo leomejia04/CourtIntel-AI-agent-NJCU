@@ -1,30 +1,25 @@
-PYTHON ?= python
-PIP ?= pip
+NPM ?= npm
 
-.PHONY: install format lint test backend frontend dev
+.PHONY: install test backend frontend dev prisma
 
 install:
-	$(PIP) install -r requirements.txt
-	npm --prefix frontend install
-
-format:
-	black app
-	ruff check app --fix
-
-lint:
-	ruff check app
+	$(NPM) --prefix server install
+	$(NPM) --prefix server run prisma:generate
+	$(NPM) --prefix frontend install
 
 test:
-	pytest
+	$(NPM) --prefix server test
 
 backend:
-	$(PYTHON) -m uvicorn app.main:app --reload
+	$(NPM) --prefix server run dev
 
 frontend:
-	npm --prefix frontend run dev
+	$(NPM) --prefix frontend run dev
 
 dev:
-	@echo "Starting backend and frontend (Ctrl+C to stop)..."
-	@($(PYTHON) -m uvicorn app.main:app --reload &)
-	@npm --prefix frontend run dev
+	@echo "Run backend: npm --prefix server run dev"
+	@echo "Run frontend: npm --prefix frontend run dev"
+
+prisma:
+	$(NPM) --prefix server run prisma:migrate
 
