@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db.js";
@@ -23,7 +24,11 @@ const caseSchema = z
     path: ["narrative"],
   });
 
-function toCaseResponse(_case: Awaited<ReturnType<typeof prisma.case.findUnique>>) {
+type CaseWithRelations = Prisma.CaseGetPayload<{
+  include: { ruling: { include: { biasCheck: true } } };
+}>;
+
+function toCaseResponse(_case: CaseWithRelations | null) {
   if (!_case) {
     return null;
   }

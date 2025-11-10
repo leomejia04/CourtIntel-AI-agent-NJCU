@@ -1,4 +1,4 @@
-import type { AuditLog } from "@prisma/client";
+import type { AuditLog, Prisma } from "@prisma/client";
 import { prisma } from "../db.js";
 
 export async function logAction({
@@ -8,7 +8,7 @@ export async function logAction({
 }: {
   userId: number;
   action: string;
-  meta?: Record<string, unknown>;
+  meta?: Prisma.InputJsonValue;
 }): Promise<AuditLog> {
   return prisma.auditLog.create({
     data: {
