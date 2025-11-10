@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { apiFetch } from "../lib/api";
 import { Button } from "../components/Button";
 import { Card } from "../components/Card";
 import { Input } from "../components/Input";
@@ -76,7 +77,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
   const [showPlain, setShowPlain] = useState(true);
 
   const fetchCases = useCallback(async () => {
-    const response = await fetch("/api/cases", { credentials: "include" });
+    const response = await apiFetch("/api/cases", { credentials: "include" });
     if (!response.ok) {
       throw new Error("Unable to load cases");
     }
@@ -89,7 +90,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
   }, []);
 
   const fetchCaseDetail = useCallback(async (caseId: number) => {
-    const response = await fetch(`/api/cases/${caseId}`, { credentials: "include" });
+    const response = await apiFetch(`/api/cases/${caseId}`, { credentials: "include" });
     if (!response.ok) {
       throw new Error("Unable to load case");
     }
@@ -98,7 +99,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
   }, []);
 
   const fetchLogs = useCallback(async () => {
-    const response = await fetch("/api/logs", { credentials: "include" });
+    const response = await apiFetch("/api/logs", { credentials: "include" });
     if (!response.ok) {
       throw new Error("Unable to load logs");
     }
@@ -175,7 +176,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch("/api/cases", {
+      const response = await apiFetch("/api/cases", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -205,7 +206,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`/api/cases/${caseId}/rule`, {
+      const response = await apiFetch(`/api/cases/${caseId}/rule`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

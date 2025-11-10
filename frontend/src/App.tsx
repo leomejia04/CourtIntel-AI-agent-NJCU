@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
+import { apiFetch } from "./lib/api";
 import { Dashboard } from "./pages/Dashboard";
 import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
@@ -14,7 +15,7 @@ const App: React.FC = () => {
   useEffect(() => {
     const checkSession = async () => {
       try {
-        const response = await fetch("/api/auth/me", { credentials: "include" });
+        const response = await apiFetch("/api/auth/me", { credentials: "include" });
         if (response.ok) {
           const data = await response.json();
           setUser(data.username);
@@ -32,7 +33,7 @@ const App: React.FC = () => {
     setAuthLoading(true);
     setError(undefined);
     try {
-      const response = await fetch("/api/auth/login", {
+      const response = await apiFetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -55,7 +56,7 @@ const App: React.FC = () => {
     setAuthLoading(true);
     setError(undefined);
     try {
-      const registerResp = await fetch("/api/auth/register", {
+      const registerResp = await apiFetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
@@ -72,7 +73,7 @@ const App: React.FC = () => {
   };
 
   const handleLogout = async () => {
-    await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+    await apiFetch("/api/auth/logout", { method: "POST", credentials: "include" });
     setUser(null);
     navigate("/login");
   };
